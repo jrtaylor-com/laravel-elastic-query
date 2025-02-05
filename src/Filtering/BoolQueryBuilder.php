@@ -10,6 +10,7 @@ use Ensi\LaravelElasticQuery\Contracts\MatchOptions;
 use Ensi\LaravelElasticQuery\Contracts\MultiMatchOptions;
 use Ensi\LaravelElasticQuery\Contracts\WildcardOptions;
 use Ensi\LaravelElasticQuery\Filtering\Criterias\Exists;
+use Ensi\LaravelElasticQuery\Filtering\Criterias\GeoDistance;
 use Ensi\LaravelElasticQuery\Filtering\Criterias\MultiMatch;
 use Ensi\LaravelElasticQuery\Filtering\Criterias\Nested;
 use Ensi\LaravelElasticQuery\Filtering\Criterias\OneMatch;
@@ -267,5 +268,12 @@ class BoolQueryBuilder implements BoolQuery, Criteria
     protected function basePath(): string
     {
         return $this->path;
+    }
+
+    public function whereDistance(string $field, string $distance, array|Arrayable $values): static
+    {
+        $this->filter->add(new GeoDistance($this->absolutePath($field), $distance,  $values));
+
+        return $this;
     }
 }

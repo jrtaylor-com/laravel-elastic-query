@@ -97,6 +97,10 @@ $searchQuery->whereDoesntHave(
 `nested_field` must have `nested` type.
 Subqueries cannot use fields of main document only subdocument.
 
+```php
+$searchQuery->whereDistance('field', '10km', ['lat' => 36, 'lon' => -86]);
+```
+
 ### Full text search
 
 ```php
