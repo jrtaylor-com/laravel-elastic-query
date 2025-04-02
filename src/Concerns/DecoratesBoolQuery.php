@@ -148,4 +148,12 @@ trait DecoratesBoolQuery
 
         return $this;
     }
+
+    public function addShouldBool(callable $fn): static
+    {
+        $this->forwardCallTo($this->boolQuery(), __FUNCTION__, func_get_args());
+
+        return $this;
+    }
+
 }

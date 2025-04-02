@@ -253,6 +253,12 @@ class BoolQueryBuilder implements BoolQuery, Criteria
         return $this;
     }
 
+    public function addShouldBool(callable $fn): static {
+        $this->should->add(static::make(builder: $fn));
+
+        return $this;
+    }
+
     protected function addNestedCriteria(string $nested, Closure $filter, CriteriaCollection $target): static
     {
         $path = $this->absolutePath($nested);
