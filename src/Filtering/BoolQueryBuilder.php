@@ -14,8 +14,8 @@ use Ensi\LaravelElasticQuery\Contracts\MultiMatchOptions;
 use Ensi\LaravelElasticQuery\Contracts\WildcardOptions;
 use Ensi\LaravelElasticQuery\Filtering\Criterias\Between;
 use Ensi\LaravelElasticQuery\Filtering\Criterias\Exists;
-use Ensi\LaravelElasticQuery\Filtering\Criterias\GeoDistance;
 use Ensi\LaravelElasticQuery\Filtering\Criterias\FunctionScore;
+use Ensi\LaravelElasticQuery\Filtering\Criterias\GeoDistance;
 use Ensi\LaravelElasticQuery\Filtering\Criterias\MoreLike;
 use Ensi\LaravelElasticQuery\Filtering\Criterias\MultiMatch;
 use Ensi\LaravelElasticQuery\Filtering\Criterias\Nested;
@@ -288,7 +288,8 @@ class BoolQueryBuilder implements BoolQuery, Criteria
         return $this;
     }
 
-    public function addShouldBool(callable $fn): static {
+    public function addShouldBool(callable $fn): static
+    {
         $this->should->add(static::make(builder: $fn));
 
         return $this;
