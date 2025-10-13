@@ -31,6 +31,7 @@ class SearchQuery implements SortableQuery, CollapsibleQuery, HighlightingQuery
     use ExtendsSort;
 
     protected BoolQueryBuilder $boolQuery;
+    protected ?BoolQueryBuilder $postFilter = null;
     protected SortCollection $sorts;
     protected ?Collapse $collapse = null;
     protected ?Highlight $highlight = null;
@@ -65,7 +66,7 @@ class SearchQuery implements SortableQuery, CollapsibleQuery, HighlightingQuery
 
     public function paginate(int $size, int $offset = 0): Page|Promise
     {
-        Assert::greaterThan($size, 0);
+        Assert::greaterThanEq($size, 0);
         Assert::greaterThanEq($offset, 0);
 
         return Response::fn(
@@ -86,7 +87,7 @@ class SearchQuery implements SortableQuery, CollapsibleQuery, HighlightingQuery
 
     public function cursorPaginate(int $size, ?string $cursor = null): CursorPage|Promise
     {
-        Assert::greaterThan($size, 0);
+        Assert::greaterThanEq($size, 0);
 
         $sorts = $this->sorts->withTiebreaker($this->index->tiebreaker());
         $current = Cursor::decode($cursor) ?? Cursor::BOF();
@@ -143,7 +144,7 @@ class SearchQuery implements SortableQuery, CollapsibleQuery, HighlightingQuery
         ?int $from = null,
         bool $totals = false,
         bool $source = true,
-        ?Cursor $cursor = null
+        ?Cursor $cursor = null,
     ): array|Promise {
         $dsl = [
             'size' => $size,
@@ -171,11 +172,15 @@ class SearchQuery implements SortableQuery, CollapsibleQuery, HighlightingQuery
             $dsl['highlight'] = $this->highlight->toDSL();
         }
 
+        if (!is_null($this->postFilter)) {
+            $dsl['post_filter'] = $this->postFilter->toDSL();
+        }
+
         if ($cursor !== null && !$cursor->isBOF()) {
             $dsl['search_after'] = $cursor->toDSL();
         }
 
-        return $this->index->search(array_filter($dsl), $this->searchType);
+        return $this->index->search(array_filter($dsl, fn (mixed $v) => !is_null($v)), $this->searchType);
     }
 
     protected function sourceToDSL(bool $source): array | bool
@@ -196,10 +201,10 @@ class SearchQuery implements SortableQuery, CollapsibleQuery, HighlightingQuery
     //endregion
 
     //region Customization
-    public function sortBy(string $field, string $order = SortOrder::ASC, ?string $mode = null, ?string $missingValues = null): static
+    public function sortBy(string $field, string $order = SortOrder::ASC, ?string $mode = null, ?string $missingValues = null, ?string $unmappedType = null): static
     {
         (new SortBuilder($this->sorts))
-            ->sortBy($field, $order, $mode, $missingValues);
+            ->sortBy($field, $order, $mode, $missingValues, $unmappedType);
 
         return $this;
     }
@@ -229,6 +234,13 @@ class SearchQuery implements SortableQuery, CollapsibleQuery, HighlightingQuery
     public function highlight(Highlight $highlight): static
     {
         $this->highlight = $highlight;
+
+        return $this;
+    }
+
+    public function setPostFilter(BoolQueryBuilder $boolQueryBuilder): static
+    {
+        $this->postFilter = $boolQueryBuilder;
 
         return $this;
     }

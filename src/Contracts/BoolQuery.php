@@ -3,6 +3,7 @@
 namespace Ensi\LaravelElasticQuery\Contracts;
 
 use Closure;
+use Ensi\LaravelElasticQuery\Filtering\Criterias\FunctionScore;
 use Illuminate\Contracts\Support\Arrayable;
 
 interface BoolQuery
@@ -45,4 +46,11 @@ interface BoolQuery
 
     public function addShouldBool(callable $fn): static;
 
+    public function whereMoreLikeThis(array $fields, MoreLikeThis $likeThis, ?MoreLikeOptions $options = null): static;
+
+    public function whereBetween(string $field, mixed $from, mixed $to): static;
+
+    public function orFunctionScore(FunctionScore $functionScore): static;
+
+    public function pinned(array $ids, ?DSLAware $query = null): static;
 }

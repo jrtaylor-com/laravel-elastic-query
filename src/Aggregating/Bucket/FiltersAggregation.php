@@ -4,25 +4,22 @@ namespace Ensi\LaravelElasticQuery\Aggregating\Bucket;
 
 use Ensi\LaravelElasticQuery\Aggregating\AggregationCollection;
 use Ensi\LaravelElasticQuery\Aggregating\BucketCollection;
+use Ensi\LaravelElasticQuery\Aggregating\FiltersCollection;
 use Ensi\LaravelElasticQuery\Aggregating\Result;
 use Ensi\LaravelElasticQuery\Contracts\Aggregation;
-use Ensi\LaravelElasticQuery\Search\Sorting\Sort;
-use Ensi\LaravelElasticQuery\Search\Sorting\SortCollection;
 use Illuminate\Support\Collection;
 use Webmozart\Assert\Assert;
 
-class TermsAggregation implements Aggregation
+class FiltersAggregation implements Aggregation
 {
     public function __construct(
         private string $name,
-        private string $field,
-        private ?int $size = null,
-        private Sort|SortCollection|null $sort = null,
+        private FiltersCollection $filters,
         private Aggregation|AggregationCollection|null $composite = null,
+        private ?string $otherBucketKey = null,
     ) {
         Assert::stringNotEmpty(trim($name));
-        Assert::stringNotEmpty(trim($field));
-        Assert::nullOrGreaterThan($this->size, 0);
+        Assert::greaterThan($filters->count(), 0);
     }
 
     public function name(): string
@@ -32,38 +29,29 @@ class TermsAggregation implements Aggregation
 
     public function toDSL(): array
     {
-        $body = ['field' => $this->field];
+        $body['filters']['filters'] = $this->filters->toDSL();
 
-        if ($this->size !== null) {
-            $body['size'] = $this->size;
+        if ($this->otherBucketKey != null) {
+            $body['filters']['other_bucket_key'] = $this->otherBucketKey;
         }
-
-        if ($this->sort) {
-            $body['order'] = $this->sort->toDSL();
-        }
-
-        $dsl = [
-            $this->name => [
-                'terms' => $body,
-            ],
-        ];
 
         if ($this->isComposite()) {
-            $dsl[$this->name]['aggs'] = $this->composite->toDSL();
+            $body['aggs'] = $this->composite->toDSL();
         }
 
-        return $dsl;
+        return [$this->name => $body];
     }
 
     public function parseResults(array $response): array
     {
         $buckets = array_map(
-            function (array $bucket) {
+            function (mixed $key, array $bucket) {
                 $values = $this->isComposite() ? $this->composite->parseResults($bucket) : [];
                 $values = $values instanceof Collection ? $values->toArray() : $values;
 
-                return Result::parseBucket($bucket, $values);
+                return Result::parseBucketWithKey($key, $bucket, $values);
             },
+            array_keys($response[$this->name]['buckets'] ?? []),
             $response[$this->name]['buckets'] ?? []
         );
 
